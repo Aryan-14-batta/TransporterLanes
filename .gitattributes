@@ -1,0 +1,26 @@
+# Normalize line endings: text files are stored with LF in the repository and checked out with the platform's
+# native endings, unless a rule below fixes them.
+* text=auto
+
+# Maven wrapper: the Unix script must keep LF (a CRLF shebang breaks it); the Windows script keeps CRLF.
+mvnw      text eol=lf
+*.cmd     text eol=crlf
+*.bat     text eol=crlf
+*.sh      text eol=lf
+
+# Data and source files are text and are normalized like everything else.
+*.csv     text
+*.json    text
+*.sql     text
+*.yml     text
+*.yaml    text
+*.java    text diff=java
+*.md      text
+
+# Binary files: never touch line endings or attempt textual diffs.
+*.jar     binary
+*.png     binary
+*.jpg     binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary

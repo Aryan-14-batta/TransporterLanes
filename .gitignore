@@ -1,0 +1,31 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.log
+.env
+
+# Local environment and secrets (never commit real credentials)
+.env.*
+!.env.example
+application-local.yml
+application-local.properties
+*.pem
+*.key
+
+# IDE metadata (Eclipse / VS Code Java extension)
+.classpath
+.project
+.settings/
+.factorypath
+
+# JVM crash and replay logs
+hs_err_pid*
+replay_pid*
+
+# OS and editor temporary files
+Thumbs.db
+*.swp
+*~
