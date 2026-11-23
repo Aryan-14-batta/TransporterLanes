@@ -31,7 +31,7 @@ transporters and assign each lane to one of them so that:
 3. **Full lane coverage:** every lane is assigned to exactly one transporter that quotes it.
 
 The number of lanes and transporters is dynamic. The service exposes two endpoints: one to submit the data and one
-to compute the optimal assignment.
+to compute the optimal assignment. A small `GET /` status endpoint confirms the service is running.
 
 ## Technology stack
 
@@ -60,7 +60,7 @@ HTTP ──► controller ──► service ────────────
 
 | Package      | Responsibility                                                                                     |
 |--------------|----------------------------------------------------------------------------------------------------|
-| `controller` | `TransporterController`: binds and validates requests and delegates to services. No business logic. |
+| `controller` | `TransporterController`: binds and validates requests and delegates to services. No business logic. `RootController`: the `GET /` status endpoint. |
 | `dto`        | Request/response records. JPA entities are never exposed through the API.                          |
 | `service`    | `TransporterInputService` (transactional dataset replacement), `InputDataValidator` (rules that span the whole request), `AssignmentService` (loads data, runs the optimizer, maps the result). |
 | `optimizer`  | The optimization engine. **No Spring or JPA dependency**; a test enforces this.                    |
@@ -271,6 +271,11 @@ The service listens on <http://localhost:8080>.
 - **Swagger UI:** <http://localhost:8080/swagger-ui.html>, with descriptions, field constraints, request examples
   and every documented error response for both endpoints.
 - **OpenAPI document:** <http://localhost:8080/v3/api-docs>.
+- **Service status:** <http://localhost:8080/> returns a short JSON confirmation (see
+  [Service status](#service-status-get-)).
+
+Swagger UI and the OpenAPI document cover only the two assignment APIs; the `GET /` status endpoint is deliberately
+left out of them.
 
 ### Database migrations
 
@@ -293,7 +298,7 @@ psql -U transporter_lanes -d transporter_lanes \
 ## Running the tests
 
 ```bash
-./mvnw test      # 125 tests; uses in-memory H2, PostgreSQL not required
+./mvnw test      # 127 tests; uses in-memory H2, PostgreSQL not required
 ./mvnw verify    # full build
 ```
 
@@ -323,6 +328,7 @@ uses H2.
 | `InputDataValidatorTest`                 | Each rule that spans the whole request; all errors reported together             |
 | Service tests (Mockito)                  | No database writes on invalid input; deletes and inserts in foreign-key order; entity → problem → response mapping |
 | `TransporterControllerTest` (`@WebMvcTest`) | Response bodies, nested validation paths, every status code                   |
+| `RootControllerTest` (`@WebMvcTest`)     | `GET /` returns the status body; other methods on `/` use the standard error body |
 | `LaneQuoteRepositoryTest` (`@DataJpaTest`) | The real migration's unique, check and foreign-key constraints                |
 | `TransporterApiIntegrationTest`          | Full stack on the assignment dataset; replacement; rollback on failure during deletion and during insertion |
 | `OpenApiDocumentationTest`               | Swagger UI is served over real HTTP; the OpenAPI document lists the right status codes; documented examples equal real responses |
@@ -331,7 +337,8 @@ The test run writes the generated OpenAPI document to `target/openapi.json`.
 
 ## API reference
 
-Both endpoints accept and return `application/json`.
+The two assignment endpoints accept and return `application/json`. A `GET /` status endpoint is also available
+(see [Service status](#service-status-get-)).
 
 ### 1. Submit input data: `POST /api/v1/transporters/input`
 
@@ -417,6 +424,30 @@ curl -X POST http://localhost:8080/api/v1/transporters/assignment \
 - `assignments` has exactly one entry per lane, ordered by lane id.
 - `selectedTransporters` lists the distinct transporters used, in ascending order.
 - `totalCost` is the sum of the assigned quotes.
+
+### Service status: `GET /`
+
+Confirms that the service is running and points to the API documentation. It needs no request body, does not touch
+the database, and is useful as a quick check after starting or deploying the application.
+
+**Request**
+
+```bash
+curl http://localhost:8080/
+```
+
+**Response: `200 OK`**
+
+```json
+{
+  "status": "success",
+  "message": "Transporter Lane Optimization API is running.",
+  "documentation": "/swagger-ui.html"
+}
+```
+
+This endpoint is intentionally **not** listed in Swagger UI or the OpenAPI document, which continue to expose only
+the two assignment APIs. Other HTTP methods on `/` return `405` with the standard error body.
 
 ### The assignment's sample dataset
 
@@ -505,7 +536,7 @@ one does and does not cover.
 
 ### 1. Automated tests (repeatable, run by `./mvnw test`)
 
-**125 tests pass on Java 21** (0 failures, 0 skipped). They run against in-memory H2 in PostgreSQL mode, so anyone
+**127 tests pass on Java 21** (0 failures, 0 skipped). They run against in-memory H2 in PostgreSQL mode, so anyone
 can repeat them without a database. They cover the optimizer rules, the tie-breaking and safeguards, the CSV
 regression for K = 1–7, 1,500 randomized comparisons with a brute-force solver, validation and every error status,
 the database constraints of the real Flyway migration, transactional rollback during both deletion and insertion,
@@ -550,7 +581,7 @@ outside the scope of this assignment.
 
 ```
 src/main/java/com/example/transporterlanes
-├── controller   TransporterController, ApiExamples (Swagger examples)
+├── controller   TransporterController, RootController (GET /), ApiExamples (Swagger examples)
 ├── dto          Request/response records with Bean Validation and OpenAPI annotations
 ├── service      TransporterInputService, InputDataValidator, AssignmentService
 ├── optimizer    AssignmentSolver, ExactCombinationSolver, OptimizationProblem, AssignmentSolution, ...
