@@ -1,0 +1,23 @@
+# Keep the build context small and keep local or secret files out of the image.
+# The Docker build only needs pom.xml and src/.
+
+# Build output (the image compiles its own)
+target/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# IDE and OS files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+
+# Local environment, secrets and logs
+.env
+.env.*
+*.log
+*.pem
+*.key

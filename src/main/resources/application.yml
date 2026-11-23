@@ -1,5 +1,12 @@
 # Production / local configuration: PostgreSQL only.
 # H2 is a test-scoped dependency and is configured separately in src/test/resources.
+server:
+  # Hosting platforms such as Render provide the port in PORT; locally the default stays 8080.
+  port: ${PORT:8080}
+  # Behind a TLS-terminating proxy, honour X-Forwarded-* headers so generated URLs (e.g. the OpenAPI server URL
+  # used by Swagger UI) use the public https scheme and host.
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: transporter-lanes
